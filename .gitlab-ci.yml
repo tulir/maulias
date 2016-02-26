@@ -1,0 +1,16 @@
+image: golang:1.6
+
+before_script:
+  - "go get -u github.com/ogier/pflag"
+  - "mkdir -p /go/src/maunium.net/go"
+  - "ln -s /builds/Tulir293/maulias /go/src/maunium.net/go/maulias"
+
+build:
+  script:
+    - "go build -o maulias"
+  stage: build
+  tags:
+    - golang
+  artifacts:
+    paths:
+    - maulias
