@@ -1,7 +1,7 @@
 image: golang:alpine
 
 before_script:
-  - "go get -u github.com/ogier/pflag"
+  - "/usr/local/go/bin/go get -u github.com/ogier/pflag"
   - "mkdir -p /go/src/maunium.net/go"
   - "ln -s /builds/Tulir293/maulias /go/src/maunium.net/go/maulias"
 
