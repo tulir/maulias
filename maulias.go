@@ -75,7 +75,6 @@ func main() {
 	} else {
 		aliasSimple()
 	}
-	fmt.Print("\n")
 }
 
 func aliasWithArgs(newline, tab, elseFormat string) {
@@ -97,7 +96,7 @@ func aliasWithArgs(newline, tab, elseFormat string) {
 	fmt.Print(tab, "else", newline)  // "Else"
 	fmt.Printf(elseFormat, *elseCmd) // Else command
 	fmt.Print(tab, "fi", newline)    // End if
-	fmt.Print("}")                   // End function
+	fmt.Print("}\n")                 // End function
 }
 
 func aliasFunction(newline, tab, elseFormat string) {
@@ -118,7 +117,7 @@ func aliasFunction(newline, tab, elseFormat string) {
 			fmt.Printf(tab+tab+"%[1]s;"+newline, replace(arg, '¤', '$')) // Commands
 		}
 	}
-	fmt.Print("}") // End function
+	fmt.Print("}\n") // End function
 }
 
 func aliasSimple() {
@@ -129,7 +128,7 @@ func aliasSimple() {
 			fmt.Print(" && ")
 		}
 	}
-	fmt.Print("'")
+	fmt.Print("'\n")
 }
 
 func replace(str string, toRepl, replWith rune) string {
