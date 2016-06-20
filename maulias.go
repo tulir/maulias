@@ -2,16 +2,18 @@ package main
 
 import (
 	"fmt"
-	flag "github.com/ogier/pflag"
+	flag "maunium.net/go/mauflag"
+	"os"
 	"strings"
 )
 
-var function = flag.BoolP("function", "f", false, "")
-var oneliner = flag.BoolP("single-line", "s", false, "")
-var withArgs = flag.BoolP("with-args", "a", false, "")
-var condition = flag.StringP("if", "i", "", "")
-var elseCmd = flag.StringP("else", "e", "", "")
-var elseCmdIsLiteral = flag.BoolP("else-literal", "l", false, "")
+var wantHelp = flag.Make().LongKey("help").ShortKey("h").Bool()
+var function = flag.Make().LongKey("function").ShortKey("f").Bool()
+var oneliner = flag.Make().LongKey("single-line").ShortKey("s").Bool()
+var withArgs = flag.Make().LongKey("with-args").ShortKey("a").Bool()
+var condition = flag.Make().LongKey("if").ShortKey("i").String()
+var elseCmd = flag.Make().LongKey("else").ShortKey("e").String()
+var elseCmdIsLiteral = flag.Make().LongKey("with-args").ShortKey("l").Bool()
 
 var help = `Generates bash functions or alias commands using given values. Intended as an advanced aliasing system.
 
@@ -31,10 +33,15 @@ Application options:
 `
 
 func init() {
-	flag.Usage = func() {
-		print(help)
+	err := flag.Parse()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		fmt.Fprintln(os.Stdout, help)
+		os.Exit(1)
+	} else if *wantHelp {
+		fmt.Fprintln(os.Stdout, help)
+		os.Exit(0)
 	}
-	flag.Parse()
 }
 
 func main() {
@@ -54,63 +61,75 @@ func main() {
 	}
 
 	if strings.Contains(flag.Arg(0), " ") && !*withArgs {
-		println("Warning: Arguments not included, as --with-args wasn't used.")
+		fmt.Println("Warning: Arguments not included, as --with-args wasn't used.")
 		flag.Args()[0] = strings.Split(flag.Arg(0), " ")[0]
 	} else if flag.NArg() < 2 {
-		println("Usage: maulias [-afls] [-e elseCommand] [-i condition] <ALIAS> <COMMANDS...>")
+		fmt.Println("Usage: maulias [-afhls] [-e elseCommand] [-i condition] <ALIAS> <COMMANDS...>")
 		return
 	}
 
 	if *withArgs {
-		sargs := strings.Split(flag.Arg(0), " ")
-		fmt.Print(sargs[0], "() {", newline) // Start function
-		sargs = sargs[1:]
-		fmt.Print(tab, "if [ ") // Start if. Condition bracket opening
-		for i, sarg := range sargs {
-			fmt.Printf("\"$%[1]d\" = \"%[2]s\"", i+1, sarg) // If conditions
-			if i+1 < len(sargs) {
-				fmt.Printf(" -a ") // Bash equivalent to "&&" (logical AND)
-			}
+		aliasWithArgs(newline, tab, elseFormat)
+	} else if *function {
+		aliasFunction(newline, tab, elseFormat)
+	} else {
+		aliasSimple()
+	}
+	fmt.Print("\n")
+}
+
+func aliasWithArgs(newline, tab, elseFormat string) {
+	sargs := strings.Split(flag.Arg(0), " ")
+	fmt.Print(sargs[0], "() {", newline) // Start function
+	sargs = sargs[1:]
+	fmt.Print(tab, "if [ ") // Start if. Condition bracket opening
+	for i, sarg := range sargs {
+		fmt.Printf("\"$%[1]d\" = \"%[2]s\"", i+1, sarg) // If conditions
+		if i+1 < len(sargs) {
+			fmt.Printf(" -a ") // Bash equivalent to "&&" (logical AND)
 		}
-		fmt.Print(" ];", newline)       // Condition bracket closing
-		fmt.Print(tab, "then", newline) // Then
+	}
+	fmt.Print(" ];", newline)       // Condition bracket closing
+	fmt.Print(tab, "then", newline) // Then
+	for _, arg := range flag.Args()[1:] {
+		fmt.Printf(tab+tab+"%[1]s;"+newline, replace(arg, '¤', '$')) // Commands
+	}
+	fmt.Print(tab, "else", newline)  // "Else"
+	fmt.Printf(elseFormat, *elseCmd) // Else command
+	fmt.Print(tab, "fi", newline)    // End if
+	fmt.Print("}")                   // End function
+}
+
+func aliasFunction(newline, tab, elseFormat string) {
+	fmt.Print(flag.Arg(0), "() {", newline) // Start function
+	if len(*condition) != 0 {
+		fmt.Printf(tab+"if [ %[1]s ]; ", *condition)
+		fmt.Print(tab, "then", newline)
 		for _, arg := range flag.Args()[1:] {
 			fmt.Printf(tab+tab+"%[1]s;"+newline, replace(arg, '¤', '$')) // Commands
 		}
-		fmt.Print(tab, "else", newline)  // "Else"
-		fmt.Printf(elseFormat, *elseCmd) // Else command
-		fmt.Print(tab, "fi", newline)    // End if
-		fmt.Print("}")                   // End function
-	} else if *function {
-		fmt.Print(flag.Arg(0), "() {", newline) // Start function
-		if len(*condition) != 0 {
-			fmt.Printf(tab+"if [ %[1]s ]; ", *condition)
-			fmt.Print(tab, "then", newline)
-			for _, arg := range flag.Args()[1:] {
-				fmt.Printf(tab+tab+"%[1]s;"+newline, replace(arg, '¤', '$')) // Commands
-			}
-			if len(*elseCmd) != 0 {
-				fmt.Print(tab, "else", newline)  // "Else"
-				fmt.Printf(elseFormat, *elseCmd) // Else command
-			}
-			fmt.Print(tab, "fi", "newline") // End if
-		} else {
-			for _, arg := range flag.Args()[1:] {
-				fmt.Printf(tab+tab+"%[1]s;"+newline, replace(arg, '¤', '$')) // Commands
-			}
+		if len(*elseCmd) != 0 {
+			fmt.Print(tab, "else", newline)  // "Else"
+			fmt.Printf(elseFormat, *elseCmd) // Else command
 		}
-		fmt.Print("}") // End function
+		fmt.Print(tab, "fi", "newline") // End if
 	} else {
-		fmt.Print("alias '", flag.Arg(0), "'='") // Alias beginning
-		for i, arg := range flag.Args()[1:] {
-			fmt.Print(replace(arg, '¤', '$')) // Commands
-			if i+2 < flag.NArg() {
-				fmt.Print(" && ")
-			}
+		for _, arg := range flag.Args()[1:] {
+			fmt.Printf(tab+tab+"%[1]s;"+newline, replace(arg, '¤', '$')) // Commands
 		}
-		fmt.Print("'")
 	}
-	fmt.Print("\n")
+	fmt.Print("}") // End function
+}
+
+func aliasSimple() {
+	fmt.Print("alias '", flag.Arg(0), "'='") // Alias beginning
+	for i, arg := range flag.Args()[1:] {
+		fmt.Print(replace(arg, '¤', '$')) // Commands
+		if i+2 < flag.NArg() {
+			fmt.Print(" && ")
+		}
+	}
+	fmt.Print("'")
 }
 
 func replace(str string, toRepl, replWith rune) string {
