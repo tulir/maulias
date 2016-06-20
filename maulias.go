@@ -55,9 +55,9 @@ func main() {
 		tab = "	"
 	}
 	if *elseCmdIsLiteral {
-		elseFormat = tab + tab + "%[1]s" + newline
+		elseFormat = fmt.Sprint(tab, tab, "%[1]s", newline)
 	} else {
-		elseFormat = tab + tab + "%[1]s \"$@\";" + newline
+		elseFormat = fmt.Sprint(tab, tab, "%[1]s \"$@\";", newline)
 	}
 
 	if strings.Contains(flag.Arg(0), " ") && !*withArgs {
@@ -79,7 +79,7 @@ func main() {
 
 func aliasWithArgs(newline, tab, elseFormat string) {
 	sargs := strings.Split(flag.Arg(0), " ")
-	fmt.Print(sargs[0], "() {", newline) // Start function
+	fmt.Print("function ", sargs[0], " {", newline) // Start function
 	sargs = sargs[1:]
 	fmt.Print(tab, "if [ ") // Start if. Condition bracket opening
 	for i, sarg := range sargs {
@@ -91,7 +91,7 @@ func aliasWithArgs(newline, tab, elseFormat string) {
 	fmt.Print(" ];", newline)       // Condition bracket closing
 	fmt.Print(tab, "then", newline) // Then
 	for _, arg := range flag.Args()[1:] {
-		fmt.Printf(tab+tab+"%[1]s;"+newline, replace(arg, '¤', '$')) // Commands
+		fmt.Printf("%[2]s%[2]s%[1]s;%[3]s", replace(arg, '¤', '$'), tab, newline) // Commands
 	}
 	fmt.Print(tab, "else", newline)  // "Else"
 	fmt.Printf(elseFormat, *elseCmd) // Else command
@@ -100,12 +100,12 @@ func aliasWithArgs(newline, tab, elseFormat string) {
 }
 
 func aliasFunction(newline, tab, elseFormat string) {
-	fmt.Print(flag.Arg(0), "() {", newline) // Start function
+	fmt.Print("function ", flag.Arg(0), " {", newline) // Start function
 	if len(*condition) != 0 {
-		fmt.Printf(tab+"if [ %[1]s ]; ", *condition)
+		fmt.Printf("%[2]sif [ %[1]s ]; ", *condition, tab)
 		fmt.Print(tab, "then", newline)
 		for _, arg := range flag.Args()[1:] {
-			fmt.Printf(tab+tab+"%[1]s;"+newline, replace(arg, '¤', '$')) // Commands
+			fmt.Printf("%[2]s%[2]s%[1]s;%[3]s", replace(arg, '¤', '$'), tab, newline) // Commands
 		}
 		if len(*elseCmd) != 0 {
 			fmt.Print(tab, "else", newline)  // "Else"
@@ -114,7 +114,7 @@ func aliasFunction(newline, tab, elseFormat string) {
 		fmt.Print(tab, "fi", "newline") // End if
 	} else {
 		for _, arg := range flag.Args()[1:] {
-			fmt.Printf(tab+tab+"%[1]s;"+newline, replace(arg, '¤', '$')) // Commands
+			fmt.Printf("%[2]s%[2]s%[1]s;%[3]s", replace(arg, '¤', '$'), tab, newline) // Commands
 		}
 	}
 	fmt.Print("}\n") // End function
