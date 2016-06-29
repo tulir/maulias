@@ -1,5 +1,7 @@
 # maulias
-[![Build Status](https://travis-ci.org/tulir293/maulias.svg?branch=master)](https://travis-ci.org/tulir293/maulias)
+[![Build Status](http://img.shields.io/travis/tulir293/maulias.svg?style=flat-square)](https://travis-ci.org/tulir293/maulias)
+[![License](http://img.shields.io/:license-mit-blue.svg?style=flat-square)](http://tulir293.mit-license.org)
+
 A command to generate bash functions that act like advanced aliases.
 
 ```
