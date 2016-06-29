@@ -1,6 +1,6 @@
 # maulias
 [![Build Status](http://img.shields.io/travis/tulir293/maulias.svg?style=flat-square)](https://travis-ci.org/tulir293/maulias)
-[![License](http://img.shields.io/:license-mit-blue.svg?style=flat-square)](http://tulir293.mit-license.org)
+[![License](http://img.shields.io/:license-mit-blue.svg?style=flat-square)](https://license.maunium.net/mit)
 
 A command to generate bash functions that act like advanced aliases.
 
